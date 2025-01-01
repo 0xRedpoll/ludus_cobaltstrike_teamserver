@@ -34,9 +34,10 @@
 
   - name: Create cobaltstrike directory if it doesn't exist
     ansible.builtin.file:
-      path: "/opt/ludus/resources/cobaltstrike"
+      path: "{{ ludus_install_directory }}/resources/cobaltstrike"
       state: directory
       recurse: true
+    delegate_to: localhost
 
   - name: Remove existing Cobalt Strike installation
     ansible.builtin.file:
@@ -117,34 +118,9 @@
     become: true
 
   - name: Add System file for Teamserver
-    ansible.builtin.blockinfile:
+    ansible.builtin.template:
+      src: "csteamserver.template"
       dest: "/etc/systemd/system/csteamserver.service"
-      create: true
-      content: "[Unit]
-
-                  Description=Cobalt Strike Team Server
-
-                  After=network.target
-
-                  StartLimitIntervalSec=0
-
-        [Service]
-
-          Type=simple
-
-          Restart=always
-
-          RestartSec=1
-
-          User=root
-
-          WorkingDirectory=/opt/cobaltstrike/server
-
-          ExecStart=/opt/cobaltstrike/server/teamserver {{ ansible_host }} {{ ludus_cobaltstrike_teamserver_password }} c2profile.profile
-
-        [Install]
-
-          WantedBy=multi-user.target"
 
   - name: Check service file was created
     ansible.builtin.stat:

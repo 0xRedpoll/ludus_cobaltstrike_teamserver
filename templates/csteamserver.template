@@ -1,0 +1,13 @@
+[Unit]
+    Description=Cobalt Strike Team Server
+    After=network.target
+    StartLimitIntervalSec=0
+[Service]
+    Type=simple
+    Restart=always
+    RestartSec=1
+    User=root
+    WorkingDirectory=/opt/cobaltstrike/server
+    ExecStart=/opt/cobaltstrike/server/teamserver {{ ansible_host }} {{ ludus_cobaltstrike_teamserver_password }} c2profile.profile
+[Install]
+    WantedBy=multi-user.target"
