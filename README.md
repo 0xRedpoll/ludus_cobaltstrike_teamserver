@@ -1,5 +1,3 @@
-# README
-
 # Ansible Role: Cobalt Strike Teamserver ([Ludus](https://ludus.cloud))
 
 An Ansible role that installs and spins up a Cobalt Strike Teamserver on a Debian or Ubuntu server.
