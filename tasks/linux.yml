@@ -1,0 +1,163 @@
+
+  - name: Ensure old service has stopped
+    ansible.builtin.command: "systemctl stop csteamserver"
+    ignore_errors: true
+    become: true
+
+  - name: Ensure any old csteamserver service is disabled
+    ansible.builtin.command: "systemctl disable csteamserver"
+    become: true
+    ignore_errors: true
+
+  - name: Reload system manager
+    ansible.builtin.shell: "systemctl daemon-reload && systemctl reset-failed"
+    become: true
+
+  - name: Ensure old system files are gone
+    ansible.builtin.file:
+      path: "/etc/systemd/system/csteamserver.service"
+      state: absent
+    become: true
+
+  - name: Download Packages
+    ansible.builtin.package:
+      name:
+        - curl
+        - openjdk-17-jdk
+      state: present
+
+  - name: Create Ludus directory on Linux target if it doesn't exist
+    ansible.builtin.file:
+      path: "/opt/ludus"
+      state: directory
+      mode: "0770"
+
+  - name: Create cobaltstrike directory if it doesn't exist
+    ansible.builtin.file:
+      path: "/opt/ludus/resources/cobaltstrike"
+      state: directory
+      recurse: true
+
+  - name: Remove existing Cobalt Strike installation
+    ansible.builtin.file:
+      path: "/opt/cobaltstrike"
+      state: absent
+
+  - name: Create CobaltStrike directory on Linux target if it doesn't exist
+    ansible.builtin.file:
+      path: "/opt/cobaltstrike"
+      state: directory
+      mode: "0770"
+
+  - name: Check if Cobalt Strike archive is present on Ludus host
+    ansible.builtin.stat:
+      path: "{{ ludus_install_directory }}/resources/cobaltstrike/cobaltstrike-dist.tgz"
+    register: cobaltstrike_exists
+    delegate_to: localhost
+
+  #Inspired by https://github.com/joeminicucci/ansible-role-cobalt-strike/ but updated to fix new command format
+  - name: Get download token from Cobalt Strike website
+    ansible.builtin.shell: curl -s https://download.cobaltstrike.com/download -d "dlkey={{ ludus_cobaltstrike_license }}" | grep -E 'href="/downloads/[a-z0-9]+' | cut -d '/' -f3
+    register: download_token
+    until: download_token.stdout
+    delegate_to: localhost
+
+  - name: Download Cobalt Strike tarball
+    ansible.builtin.get_url:
+      url: "https://download.cobaltstrike.com/downloads/{{ download_token.stdout }}/latest410/cobaltstrike-dist-linux.tgz"
+      dest: "{{ ludus_install_directory }}/resources/cobaltstrike/cobaltstrike-dist.tgz"
+      validate_certs: false
+    delegate_to: localhost
+
+  - name: Copy Cobalt Strike archive to Linux target
+    ansible.builtin.copy:
+      src: "{{ ludus_install_directory }}/resources/cobaltstrike/cobaltstrike-dist.tgz"
+      dest: "/opt/cobaltstrike-dist.tgz"
+      mode: "0644"
+
+  - name: Extract Cobalt Strike archive
+    ansible.builtin.command: "tar -xvf /opt/cobaltstrike-dist.tgz -C /opt"
+    become: yes
+
+  - name: Add Cobalt Strike license file to Linux target
+    ansible.builtin.shell: "echo {{ ludus_cobaltstrike_license }} > /opt/cobaltstrike/.cobaltstrike-license && chmod 0660 /opt/cobaltstrike/.cobaltstrike-license"
+    become: yes
+
+  - name: Check if Cobalt Strike license file has been created on Linux target
+    ansible.builtin.stat:
+      path: "/opt/cobaltstrike/.cobaltstrike-license"
+
+  - name: Check if user has provided correct path to a C2 Profile
+    ansible.builtin.stat:
+      path: "{{ ludus_cobaltstrike_c2_profile }}"
+    delegate_to: localhost
+    register: c2_profile_exists
+
+  - name: Copy provided C2 profile to Linux target
+    ansible.builtin.copy:
+      src: "{{ ludus_cobaltstrike_c2_profile }}"
+      dest: "/opt/cobaltstrike/server/c2profile.profile"
+      mode: "0660"
+    when: c2_profile_exists.stat.exists
+
+  - name: Download default C2 profile if not provided
+    ansible.builtin.get_url:
+      url: "https://raw.githubusercontent.com/rsmudge/Malleable-C2-Profiles/refs/heads/master/normal/webbug.profile"
+      dest: "/opt/cobaltstrike/server/c2profile.profile"
+      mode: "0660"
+    when: not c2_profile_exists.stat.exists
+
+  - name: Update Cobalt Strike
+    ansible.builtin.shell: "cd /opt/cobaltstrike && cat .cobaltstrike-license | ./update"
+
+  - name: Remove Cobalt Strike license file
+    ansible.builtin.file:
+      path: "/opt/cobaltstrike/.cobaltstrike-license"
+      state: absent
+    become: true
+
+  - name: Add System file for Teamserver
+    ansible.builtin.blockinfile:
+      dest: "/etc/systemd/system/csteamserver.service"
+      create: true
+      content: "[Unit]
+
+                  Description=Cobalt Strike Team Server
+
+                  After=network.target
+
+                  StartLimitIntervalSec=0
+
+        [Service]
+
+          Type=simple
+
+          Restart=always
+
+          RestartSec=1
+
+          User=root
+
+          WorkingDirectory=/opt/cobaltstrike/server
+
+          ExecStart=/opt/cobaltstrike/server/teamserver {{ ansible_host }} {{ ludus_cobaltstrike_teamserver_password }} c2profile.profile
+
+        [Install]
+
+          WantedBy=multi-user.target"
+
+  - name: Check service file was created
+    ansible.builtin.stat:
+      path: "/etc/systemd/system/csteamserver.service"
+
+  - name: Reload Systemd manager
+    ansible.builtin.command: "systemctl daemon-reload"
+    become: yes
+
+  - name: Start Teamserver service
+    ansible.builtin.command: "systemctl start csteamserver.service"
+    become: yes
+
+  - name: Enable Teamserver service
+    ansible.builtin.command: "systemctl enable csteamserver.service"
+    become: yes
