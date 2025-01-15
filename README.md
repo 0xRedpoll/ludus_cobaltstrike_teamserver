@@ -30,7 +30,7 @@ None.
 ```yaml
 - hosts: cobaltstrike_teamserver_host
   roles:
-    - redpoll.ludus_cobaltstrike_teamserver
+    - 0xRedpoll.ludus_cobaltstrike_teamserver
   vars:
     ludus_cobaltstrike_teamserver_password: "0xRedpoll"
     ludus_cobaltstrike_c2_profile: ""
@@ -53,7 +53,7 @@ ludus:
       snapshot: false
       block_internet: false
     roles:
-      - redpoll.ludus_cobaltstrike_teamserver
+      - 0xRedpoll.ludus_cobaltstrike_teamserver
     role_vars:
       ludus_cobaltstrike_teamserver_password: "0xRedpoll"
       ludus_cobaltstrike_license: "0000-0000-0000-0000"
