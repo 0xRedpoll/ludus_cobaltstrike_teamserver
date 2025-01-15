@@ -6,7 +6,7 @@ An Ansible role that installs and spins up a Cobalt Strike Teamserver on a Debia
 > Currently support for Windows has not been implemented but with enough demand I am happy to further this
 
 ## Requirements
-None.
+- You need to supply a valid Cobalt Strike license for this to be successful.
 
 ## Role Variables
 
@@ -30,7 +30,7 @@ None.
 ```yaml
 - hosts: cobaltstrike_teamserver_host
   roles:
-    - 0xRedpoll.ludus_cobaltstrike_teamserver
+    - redpoll.ludus_cobaltstrike_teamserver
   vars:
     ludus_cobaltstrike_teamserver_password: "0xRedpoll"
     ludus_cobaltstrike_c2_profile: ""
@@ -53,7 +53,7 @@ ludus:
       snapshot: false
       block_internet: false
     roles:
-      - 0xRedpoll.ludus_cobaltstrike_teamserver
+      - redpoll.ludus_cobaltstrike_teamserver
     role_vars:
       ludus_cobaltstrike_teamserver_password: "0xRedpoll"
       ludus_cobaltstrike_license: "0000-0000-0000-0000"
