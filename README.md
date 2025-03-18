@@ -7,6 +7,8 @@ An Ansible role that installs and spins up a Cobalt Strike Teamserver on a Debia
 
 ## Requirements
 - You need to supply a valid Cobalt Strike license for this to be successful.
+- Add the Ludus Ansible Galaxy Role.
+  ```ludus ansible role add 0xRedpoll.ludus_cobaltstrike_teamserver```
 
 ## Role Variables
 
