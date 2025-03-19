@@ -36,6 +36,13 @@ None.
     ludus_cobaltstrike_c2_profile: ""
     ludus_cobaltstrike_license: "0000-0000-0000-0000"
 ```
+## Ludus Usage
+You can add the role to your range using the following command in ludus:
+```yaml 
+ludus ansible role add 0xRedpoll.ludus_cobaltstrike_teamserver
+```
+
+and then referencing the role as shown below.
 
 ## Example Ludus Range Config
 
